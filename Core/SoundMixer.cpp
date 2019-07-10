@@ -76,6 +76,8 @@ void SoundMixer::Reset()
 	_fadeRatio = 1.0;
 	_muteFrameCount = 0;
 
+	_prev_stamp = 0;
+
 	_previousOutputLeft = 0;
 	_previousOutputRight = 0;
 	blip_clear(_blipBufLeft);
@@ -163,17 +165,6 @@ void SoundMixer::PlayAudioBuffer(uint32_t time)
 	}
 
 	if(rewindManager && rewindManager->SendAudio(_outputBuffer, (uint32_t)sampleCount, _sampleRate)) {
-		bool isRecording = _waveRecorder || _console->GetVideoRenderer()->IsRecording();
-		if(isRecording) {
-			shared_ptr<WaveRecorder> recorder = _waveRecorder;
-			if(recorder) {
-				if(!recorder->WriteSamples(_outputBuffer, (uint32_t)sampleCount, _sampleRate, true)) {
-					_waveRecorder.reset();
-				}
-			}
-			_console->GetVideoRenderer()->AddRecordingSound(_outputBuffer, (uint32_t)sampleCount, _sampleRate);
-		}
-
 		if(_audioDevice && !_console->IsPaused()) {
 			_audioDevice->PlayBuffer(_outputBuffer, (uint32_t)sampleCount, _sampleRate, true);
 		}
@@ -281,6 +272,8 @@ void SoundMixer::EndFrame(uint32_t time)
 	sort(_timestamps.begin(), _timestamps.end());
 	_timestamps.erase(std::unique(_timestamps.begin(), _timestamps.end()), _timestamps.end());
 
+	uint32_t since_last_stamp = 0;
+
 	bool muteFrame = true;
 	for(size_t i = 0, len = _timestamps.size(); i < len; i++) {
 		uint32_t stamp = _timestamps[i];
@@ -294,6 +287,20 @@ void SoundMixer::EndFrame(uint32_t time)
 		}
 
 		int16_t currentOutput = GetOutputVolume(false);
+
+		if(_waveRecorder) {
+			if (i == 0) {
+				since_last_stamp = CycleLength + stamp - _prev_stamp;
+			} else {
+				since_last_stamp = stamp - _prev_stamp;
+			}
+			for(uint32_t drli = 0; drli < since_last_stamp; drli++) {
+				if(!_waveRecorder->WriteSamples(&_previousOutputLeft, 1, 1789773, false)) {
+					_waveRecorder.reset();
+				}
+			}
+		}
+
 		blip_add_delta(_blipBufLeft, stamp, (int)((currentOutput - _previousOutputLeft) * masterVolume));
 		_previousOutputLeft = currentOutput;
 
@@ -302,6 +309,7 @@ void SoundMixer::EndFrame(uint32_t time)
 			blip_add_delta(_blipBufRight, stamp, (int)((currentOutput - _previousOutputRight) * masterVolume));
 			_previousOutputRight = currentOutput;
 		}
+		_prev_stamp = stamp;
 	}
 
 	blip_end_frame(_blipBufLeft, time);
@@ -371,7 +379,7 @@ void SoundMixer::UpdateEqualizers(bool forceUpdate)
 
 void SoundMixer::StartRecording(string filepath)
 {
-	_waveRecorder.reset(new WaveRecorder(filepath, _settings->GetSampleRate(), true));
+	_waveRecorder.reset(new WaveRecorder(filepath, 1789773, false));
 }
 
 void SoundMixer::StopRecording()
