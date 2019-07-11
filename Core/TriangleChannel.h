@@ -23,11 +23,11 @@ protected:
 	{
 		//The sequencer is clocked by the timer as long as both the linear counter and the length counter are nonzero. 
 		if(_lengthCounter > 0 && _linearCounter > 0) {
-			_sequencePosition = (_sequencePosition + 1) & 0x1F;
-			
 			if(_period >= 2 || !_console->GetSettings()->CheckFlag(EmulationFlags::SilenceTriangleHighFreq)) {
 				//Disabling the triangle channel when period is < 2 removes "pops" in the audio that are caused by the ultrasonic frequencies
 				//This is less "accurate" in terms of emulation, so this is an option (disabled by default)
+				_sequencePosition = (_sequencePosition + 1) & 0x1F;
+				
 				AddOutput(_sequence[_sequencePosition]);
 			}
 		}
