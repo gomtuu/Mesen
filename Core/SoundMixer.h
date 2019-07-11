@@ -52,6 +52,7 @@ private:
 	ReverbFilter _reverbFilter;
 
 	uint32_t _prev_stamp = 0;
+	uint32_t _prev_frame_time = 0;
 
 	int16_t _previousOutputLeft = 0;
 	int16_t _previousOutputRight = 0;

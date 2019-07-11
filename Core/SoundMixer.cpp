@@ -77,6 +77,7 @@ void SoundMixer::Reset()
 	_muteFrameCount = 0;
 
 	_prev_stamp = 0;
+	_prev_frame_time = 0;
 
 	_previousOutputLeft = 0;
 	_previousOutputRight = 0;
@@ -290,7 +291,7 @@ void SoundMixer::EndFrame(uint32_t time)
 
 		if(_waveRecorder) {
 			if (i == 0) {
-				since_last_stamp = CycleLength + stamp - _prev_stamp;
+				since_last_stamp = _prev_frame_time + stamp - _prev_stamp;
 			} else {
 				since_last_stamp = stamp - _prev_stamp;
 			}
@@ -311,6 +312,8 @@ void SoundMixer::EndFrame(uint32_t time)
 		}
 		_prev_stamp = stamp;
 	}
+
+	_prev_frame_time = time;
 
 	blip_end_frame(_blipBufLeft, time);
 	if(_hasPanning) {
