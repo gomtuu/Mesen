@@ -291,7 +291,7 @@ void SoundMixer::EndFrame(uint32_t time)
 
 		if(_waveRecorder) {
 			if (i == 0) {
-				since_last_stamp = _prev_frame_time + stamp - _prev_stamp;
+				since_last_stamp = _prev_frame_time - _prev_stamp + stamp;
 			} else {
 				since_last_stamp = stamp - _prev_stamp;
 			}
@@ -311,6 +311,15 @@ void SoundMixer::EndFrame(uint32_t time)
 			_previousOutputRight = currentOutput;
 		}
 		_prev_stamp = stamp;
+	}
+	if (muteFrame && _waveRecorder) {
+		since_last_stamp = _prev_frame_time - _prev_stamp + time ;
+		for(uint32_t drli = 0; drli < since_last_stamp; drli++) {
+			if(!_waveRecorder->WriteSamples(&_previousOutputLeft, 1, 1789773, false)) {
+				_waveRecorder.reset();
+			}
+		}
+		_prev_stamp = time;
 	}
 
 	_prev_frame_time = time;
