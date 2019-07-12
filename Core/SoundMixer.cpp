@@ -296,7 +296,7 @@ void SoundMixer::EndFrame(uint32_t time)
 				since_last_stamp = stamp - _prev_stamp;
 			}
 			for(uint32_t drli = 0; drli < since_last_stamp; drli++) {
-				int16_t drlOutput = _previousOutputLeft - 1448) << 4;
+				int16_t drlOutput = (_previousOutputLeft - 1448) << 4;
 				if(!_waveRecorder->WriteSamples(&drlOutput, 1, 1789773, false)) {
 					_waveRecorder.reset();
 				}
