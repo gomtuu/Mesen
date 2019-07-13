@@ -54,6 +54,12 @@ private:
 	uint32_t _prev_stamp = 0;
 	uint32_t _prev_frame_time = 0;
 
+	uint8_t _prev_chan0 = 0;
+	uint8_t _prev_chan1 = 0;
+	uint8_t _prev_chan2 = 0;
+	uint8_t _prev_chan3 = 0;
+	uint8_t _prev_chan4 = 0;
+
 	int16_t _previousOutputLeft = 0;
 	int16_t _previousOutputRight = 0;
 

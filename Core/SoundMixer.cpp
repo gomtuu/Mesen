@@ -296,8 +296,11 @@ void SoundMixer::EndFrame(uint32_t time)
 				since_last_stamp = stamp - _prev_stamp;
 			}
 			for(uint32_t drli = 0; drli < since_last_stamp; drli++) {
-				int16_t drlOutput = (_previousOutputLeft - 1448) << 4;
-				if(!_waveRecorder->WriteSamples(&drlOutput, 1, 1789773, false)) {
+				if(!_waveRecorder->WriteSamples(&_prev_chan0, 1, 1789773, false) ||
+					!_waveRecorder->WriteSamples(&_prev_chan1, 1, 1789773, false) ||
+					!_waveRecorder->WriteSamples(&_prev_chan2, 1, 1789773, false) ||
+					!_waveRecorder->WriteSamples(&_prev_chan3, 1, 1789773, false) ||
+					!_waveRecorder->WriteSamples(&_prev_chan4, 1, 1789773, false)) {
 					_waveRecorder.reset();
 				}
 			}
@@ -305,6 +308,11 @@ void SoundMixer::EndFrame(uint32_t time)
 
 		blip_add_delta(_blipBufLeft, stamp, (int)((currentOutput - _previousOutputLeft) * masterVolume));
 		_previousOutputLeft = currentOutput;
+		_prev_chan0 = _currentOutput[0];
+		_prev_chan1 = _currentOutput[1];
+		_prev_chan2 = _currentOutput[2];
+		_prev_chan3 = _currentOutput[3];
+		_prev_chan4 = _currentOutput[4];
 
 		if(_hasPanning) {
 			currentOutput = GetOutputVolume(true);
@@ -316,8 +324,11 @@ void SoundMixer::EndFrame(uint32_t time)
 	if (muteFrame && _waveRecorder) {
 		since_last_stamp = _prev_frame_time - _prev_stamp + time ;
 		for(uint32_t drli = 0; drli < since_last_stamp; drli++) {
-			int16_t drlOutput = (_previousOutputLeft - 1448) << 4;
-			if(!_waveRecorder->WriteSamples(&drlOutput, 1, 1789773, false)) {
+			if(!_waveRecorder->WriteSamples(&_prev_chan0, 1, 1789773, false) ||
+				!_waveRecorder->WriteSamples(&_prev_chan1, 1, 1789773, false) ||
+				!_waveRecorder->WriteSamples(&_prev_chan2, 1, 1789773, false) ||
+				!_waveRecorder->WriteSamples(&_prev_chan3, 1, 1789773, false) ||
+				!_waveRecorder->WriteSamples(&_prev_chan4, 1, 1789773, false)) {
 				_waveRecorder.reset();
 			}
 		}

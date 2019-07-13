@@ -17,5 +17,5 @@ public:
 	WaveRecorder(string outputFile, uint32_t sampleRate, bool isStereo);
 	~WaveRecorder();
 
-	bool WriteSamples(int16_t* samples, uint32_t sampleCount, uint32_t sampleRate, bool isStereo);
+	bool WriteSamples(uint8_t* samples, uint32_t sampleCount, uint32_t sampleRate, bool isStereo);
 };

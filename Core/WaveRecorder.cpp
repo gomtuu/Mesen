@@ -32,8 +32,8 @@ void WaveRecorder::WriteHeader()
 	_stream.write((char*)&chunkSize, sizeof(chunkSize));
 
 	uint16_t format = 1; //PCM
-	uint16_t channelCount = _isStereo ? 2 : 1;
-	uint16_t bytesPerSample = 2;
+	uint16_t channelCount = _isStereo ? 2 : 5;
+	uint16_t bytesPerSample = 1;
 	uint16_t blockAlign = channelCount * bytesPerSample;
 	uint32_t byteRate = _sampleRate * channelCount * bytesPerSample;
 	uint16_t bitsPerSample = bytesPerSample * 8;
@@ -50,14 +50,14 @@ void WaveRecorder::WriteHeader()
 	_stream.write((char*)&size, sizeof(size));
 }
 
-bool WaveRecorder::WriteSamples(int16_t * samples, uint32_t sampleCount, uint32_t sampleRate, bool isStereo)
+bool WaveRecorder::WriteSamples(uint8_t * samples, uint32_t sampleCount, uint32_t sampleRate, bool isStereo)
 {
 	if(_sampleRate != sampleRate || _isStereo != isStereo) {
 		//Format changed, stop recording
 		CloseFile();
 		return false;
 	} else {
-		uint32_t sampleBytes = sampleCount * (isStereo ? 4 : 2);
+		uint32_t sampleBytes = sampleCount * (isStereo ? 2 : 1);
 		_stream.write((char*)samples, sampleBytes);
 		_streamSize += sampleBytes;
 		return true;
