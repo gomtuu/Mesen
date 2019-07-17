@@ -51,15 +51,6 @@ private:
 	StereoCombFilter _stereoCombFilter;
 	ReverbFilter _reverbFilter;
 
-	uint32_t _prev_stamp = 0;
-	uint32_t _prev_frame_time = 0;
-
-	uint8_t _prev_chan0 = 0;
-	uint8_t _prev_chan1 = 0;
-	uint8_t _prev_chan2 = 0;
-	uint8_t _prev_chan3 = 0;
-	uint8_t _prev_chan4 = 0;
-
 	int16_t _previousOutputLeft = 0;
 	int16_t _previousOutputRight = 0;
 
@@ -69,6 +60,8 @@ private:
 	vector<uint32_t> _timestamps;
 	int16_t _channelOutput[MaxChannelCount][CycleLength];
 	int16_t _currentOutput[MaxChannelCount];
+
+	uint8_t _rawFiveChannelBuffer[CycleLength][5];
 
 	blip_t* _blipBufLeft;
 	blip_t* _blipBufRight;

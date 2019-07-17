@@ -76,9 +76,6 @@ void SoundMixer::Reset()
 	_fadeRatio = 1.0;
 	_muteFrameCount = 0;
 
-	_prev_stamp = 0;
-	_prev_frame_time = 0;
-
 	_previousOutputLeft = 0;
 	_previousOutputRight = 0;
 	blip_clear(_blipBufLeft);
@@ -92,6 +89,7 @@ void SoundMixer::Reset()
 	}
 	memset(_channelOutput, 0, sizeof(_channelOutput));
 	memset(_currentOutput, 0, sizeof(_currentOutput));
+	memset(_rawFiveChannelBuffer, 0, sizeof(_rawFiveChannelBuffer));
 
 	UpdateRates(true);
 	UpdateEqualizers(true);
@@ -166,6 +164,23 @@ void SoundMixer::PlayAudioBuffer(uint32_t time)
 	}
 
 	if(rewindManager && rewindManager->SendAudio(_outputBuffer, (uint32_t)sampleCount, _sampleRate)) {
+		bool isRecording = _waveRecorder || _console->GetVideoRenderer()->IsRecording();
+		if(isRecording) {
+			shared_ptr<WaveRecorder> recorder = _waveRecorder;
+			if(recorder) {
+				/*
+				if(!recorder->WriteSamples(_outputBuffer, (uint32_t)sampleCount, _sampleRate, true)) {
+					_waveRecorder.reset();
+				}
+				*/
+				if(!recorder->WriteSamples((uint8_t*)&_rawFiveChannelBuffer, (uint32_t)time * 5, 1789773, false)) {
+					_waveRecorder.reset();
+				}
+				//memset(_rawFiveChannelBuffer, 0, sizeof(_rawFiveChannelBuffer));
+			}
+			_console->GetVideoRenderer()->AddRecordingSound(_outputBuffer, (uint32_t)sampleCount, _sampleRate);
+		}
+
 		if(_audioDevice && !_console->IsPaused()) {
 			_audioDevice->PlayBuffer(_outputBuffer, (uint32_t)sampleCount, _sampleRate, true);
 		}
@@ -273,8 +288,6 @@ void SoundMixer::EndFrame(uint32_t time)
 	sort(_timestamps.begin(), _timestamps.end());
 	_timestamps.erase(std::unique(_timestamps.begin(), _timestamps.end()), _timestamps.end());
 
-	uint32_t since_last_stamp = 0;
-
 	bool muteFrame = true;
 	for(size_t i = 0, len = _timestamps.size(); i < len; i++) {
 		uint32_t stamp = _timestamps[i];
@@ -290,52 +303,49 @@ void SoundMixer::EndFrame(uint32_t time)
 		int16_t currentOutput = GetOutputVolume(false);
 
 		if(_waveRecorder) {
+			uint32_t start;
+			uint32_t duration;
 			if (i == 0) {
-				since_last_stamp = _prev_frame_time - _prev_stamp + stamp;
-			} else {
-				since_last_stamp = stamp - _prev_stamp;
-			}
-			for(uint32_t drli = 0; drli < since_last_stamp; drli++) {
-				if(!_waveRecorder->WriteSamples(&_prev_chan0, 1, 1789773, false) ||
-					!_waveRecorder->WriteSamples(&_prev_chan1, 1, 1789773, false) ||
-					!_waveRecorder->WriteSamples(&_prev_chan2, 1, 1789773, false) ||
-					!_waveRecorder->WriteSamples(&_prev_chan3, 1, 1789773, false) ||
-					!_waveRecorder->WriteSamples(&_prev_chan4, 1, 1789773, false)) {
-					_waveRecorder.reset();
+				start = 0;
+				duration = stamp;
+				for(uint32_t sample_i = 0; sample_i < duration; sample_i++) {
+					for(uint8_t channel_i = 0; channel_i < 5; channel_i++) {
+						_rawFiveChannelBuffer[start + sample_i][channel_i] = _rawFiveChannelBuffer[CycleLength - 1][channel_i];
+					}
 				}
+			}
+			start = stamp;
+			if (i + 1 < len) {
+				duration = _timestamps[i + 1] - stamp;
+			} else {
+				duration = CycleLength - stamp;
+			}
+			for(uint32_t sample_i = 0; sample_i < duration; sample_i++) {
+				for(uint8_t channel_i = 0; channel_i < 4; channel_i++) {
+					_rawFiveChannelBuffer[start + sample_i][channel_i] = (_currentOutput[channel_i] << 3) + 128;
+				}
+				_rawFiveChannelBuffer[start + sample_i][4] = _currentOutput[4] + 128;
 			}
 		}
 
 		blip_add_delta(_blipBufLeft, stamp, (int)((currentOutput - _previousOutputLeft) * masterVolume));
 		_previousOutputLeft = currentOutput;
-		_prev_chan0 = (_currentOutput[0] << 3) + 128;
-		_prev_chan1 = (_currentOutput[1] << 3) + 128;
-		_prev_chan2 = (_currentOutput[2] << 3) + 128;
-		_prev_chan3 = (_currentOutput[3] << 3) + 128;
-		_prev_chan4 = _currentOutput[4] + 128;
 
 		if(_hasPanning) {
 			currentOutput = GetOutputVolume(true);
 			blip_add_delta(_blipBufRight, stamp, (int)((currentOutput - _previousOutputRight) * masterVolume));
 			_previousOutputRight = currentOutput;
 		}
-		_prev_stamp = stamp;
 	}
 	if (muteFrame && _waveRecorder) {
-		since_last_stamp = _prev_frame_time - _prev_stamp + time ;
-		for(uint32_t drli = 0; drli < since_last_stamp; drli++) {
-			if(!_waveRecorder->WriteSamples(&_prev_chan0, 1, 1789773, false) ||
-				!_waveRecorder->WriteSamples(&_prev_chan1, 1, 1789773, false) ||
-				!_waveRecorder->WriteSamples(&_prev_chan2, 1, 1789773, false) ||
-				!_waveRecorder->WriteSamples(&_prev_chan3, 1, 1789773, false) ||
-				!_waveRecorder->WriteSamples(&_prev_chan4, 1, 1789773, false)) {
-				_waveRecorder.reset();
+		uint32_t duration = time;
+		for(uint32_t sample_i = 0; sample_i < duration; sample_i++) {
+			for(uint8_t channel_i = 0; channel_i < 4; channel_i++) {
+				_rawFiveChannelBuffer[sample_i][channel_i] = _rawFiveChannelBuffer[CycleLength - 1][channel_i];
 			}
+			_rawFiveChannelBuffer[sample_i][4] = _rawFiveChannelBuffer[CycleLength - 1][4];
 		}
-		_prev_stamp = time;
 	}
-
-	_prev_frame_time = time;
 
 	blip_end_frame(_blipBufLeft, time);
 	if(_hasPanning) {
