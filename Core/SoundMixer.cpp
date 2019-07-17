@@ -308,11 +308,11 @@ void SoundMixer::EndFrame(uint32_t time)
 
 		blip_add_delta(_blipBufLeft, stamp, (int)((currentOutput - _previousOutputLeft) * masterVolume));
 		_previousOutputLeft = currentOutput;
-		_prev_chan0 = _currentOutput[0];
-		_prev_chan1 = _currentOutput[1];
-		_prev_chan2 = _currentOutput[2];
-		_prev_chan3 = _currentOutput[3];
-		_prev_chan4 = _currentOutput[4];
+		_prev_chan0 = (_currentOutput[0] << 3) + 128;
+		_prev_chan1 = (_currentOutput[1] << 3) + 128;
+		_prev_chan2 = (_currentOutput[2] << 3) + 128;
+		_prev_chan3 = (_currentOutput[3] << 3) + 128;
+		_prev_chan4 = (_currentOutput[4]) + 128;
 
 		if(_hasPanning) {
 			currentOutput = GetOutputVolume(true);
