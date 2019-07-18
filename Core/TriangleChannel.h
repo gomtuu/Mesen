@@ -22,15 +22,13 @@ protected:
 	void Clock() override
 	{
 		//The sequencer is clocked by the timer as long as both the linear counter and the length counter are nonzero. 
-		if(_lengthCounter > 0 && _linearCounter > 0 &&
-				(_period >= 2 || !_console->GetSettings()->CheckFlag(EmulationFlags::SilenceTriangleHighFreq))) {
-			_sequencePosition = (_sequencePosition + 1) & 0x1F;
-			
-			//if(_period >= 2 || !_console->GetSettings()->CheckFlag(EmulationFlags::SilenceTriangleHighFreq)) {
-				//Disabling the triangle channel when period is < 2 removes "pops" in the audio that are caused by the ultrasonic frequencies
-				//This is less "accurate" in terms of emulation, so this is an option (disabled by default)
+		if(_lengthCounter > 0 && _linearCounter > 0) {
+			//Disabling the triangle channel when period is < 2 removes "pops" in the audio that are caused by the ultrasonic frequencies
+			//This is less "accurate" in terms of emulation, so this is an option (disabled by default)
+			if (_period >= 2 || !_console->GetSettings()->CheckFlag(EmulationFlags::SilenceTriangleHighFreq))) {
+				_sequencePosition = (_sequencePosition + 1) & 0x1F;
 				AddOutput(_sequence[_sequencePosition]);
-			//}
+			}
 		}
 	}
 
@@ -48,7 +46,12 @@ public:
 		_linearReloadFlag = false;
 		_linearControlFlag = false;
 
-		_sequencePosition = 16; // was 0
+		//Also silence initial pop by starting triangle at low output instead of high
+		//Changes phase of triangle, so it's less accurate
+		if (_console->GetSettings()->CheckFlag(EmulationFlags::SilenceTriangleHighFreq))
+			_sequencePosition = 16;
+		else
+			_sequencePosition = 0;
 	}
 
 	virtual void StreamState(bool saving) override
