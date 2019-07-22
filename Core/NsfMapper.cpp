@@ -18,7 +18,7 @@ NsfMapper::~NsfMapper()
 void NsfMapper::InitMapper()
 {
 	_console->GetSettings()->DisableOverclocking(true);
-	_console->GetSettings()->ClearFlags(EmulationFlags::Paused);
+	_console->GetSettings()->SetFlags(EmulationFlags::Paused); // Make WAV recording easier
 	_console->GetSettings()->SetFlags(EmulationFlags::NsfPlayerEnabled);
 
 	_mmc5Audio.reset(new MMC5Audio(_console));

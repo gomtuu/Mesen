@@ -89,7 +89,7 @@ void SoundMixer::Reset()
 	}
 	memset(_channelOutput, 0, sizeof(_channelOutput));
 	memset(_currentOutput, 0, sizeof(_currentOutput));
-	memset(_rawFiveChannelBuffer, 0, sizeof(_rawFiveChannelBuffer));
+	memset(_rawFiveChannelBuffer, 128, sizeof(_rawFiveChannelBuffer)); //128 is center in unsigned 8-bit WAV
 
 	UpdateRates(true);
 	UpdateEqualizers(true);
